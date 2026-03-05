@@ -1,0 +1,11 @@
+image: node:20-alpine
+
+stages:
+  - test
+
+run_postman_tests:
+  stage: test
+  script:
+    - echo "Startar automatiserade API-tester med Newman..."
+   
+    - npx newman run Video_Game_API.postman_collection.json -e production.postman_environment.json
