@@ -7,5 +7,14 @@ run_postman_tests:
   stage: test
   script:
     - echo "Startar automatiserade API-tester med Newman..."
-   
-    - npx newman run Video_Game_API.postman_collection.json -e production.postman_environment.json
+    - npx newman run VideoGameAPI.postman_collection.json -e Local.postman_environment.json
+  artifacts:
+    when: always
+    paths:
+      - test-results.json
+    expire_in: 30 days
+  only:
+    - main
+    - develop
+    - merge_requests
+    
