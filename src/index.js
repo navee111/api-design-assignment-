@@ -1,16 +1,36 @@
 require('dotenv').config();
+const express = require('express');
 const { ApolloServer } = require('@apollo/server');
-const { startStandaloneServer } = require('@apollo/server/standalone');
+const { expressMiddleware } = require('@apollo/server/express4');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 
 async function startServer() {
-  const server = new ApolloServer({ typeDefs, resolvers });
-  const { url } = await startStandaloneServer(server, {
-    context: async ({ req }) => ({ req }),
-    listen: { port: process.env.PORT || 4000 }
+
+  const app = express();
+
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers
   });
-  console.log(`🚀 Server ready at ${url}`);
+
+  await server.start();
+
+  app.use(
+    '/graphql',
+    cors(),
+    bodyParser.json(),
+    expressMiddleware(server)
+  );
+
+  const PORT = process.env.PORT || 4000;
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
+  });
 }
 
-startServer().catch(console.error);
+startServer();
