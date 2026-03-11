@@ -1,43 +1,42 @@
-require('dotenv').config();
-const express = require('express');
-const { ApolloServer } = require('@apollo/server');
-const { expressMiddleware } = require('@apollo/server/express4');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+require("dotenv").config();
+const express = require("express");
+const { ApolloServer } = require("@apollo/server");
+const { expressMiddleware } = require("@apollo/server/express4");
+const cors = require("cors");
 
-const typeDefs = require('./schema');
-const resolvers = require('./resolvers');
+const typeDefs = require("./schema");
+const resolvers = require("./resolvers");
 
 async function startServer() {
-
+  
   const app = express();
+
+  // 1️⃣ Middleware före Apollo
+  app.use(cors());
+  app.use(express.json());
 
   const server = new ApolloServer({
     typeDefs,
     resolvers,
   });
 
-  // Starta servern
+
   await server.start();
 
-  // Lägg till middleware på /graphql
+  // 2️⃣ Apollo middleware på slutet
   app.use(
-    '/graphql',
-    cors(),
-    bodyParser.json(),
+    "/graphql",
     expressMiddleware(server, {
-      context: async ({ req }) => ({ req }) 
-    })
+      context: async ({ req }) => ({ req }),
+    }),
   );
 
-  // Lyssna på rätt port
+
   const PORT = process.env.PORT || 4000;
-  
+
   app.listen(PORT, () => {
-    console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
+    console.log(`🚀 Server ready at port ${PORT}`);
   });
 }
 
-startServer().catch(err => {
-  console.error('Error starting server:', err);
-});
+startServer().catch((err) => console.error(err));
