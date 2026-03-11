@@ -14,23 +14,30 @@ async function startServer() {
 
   const server = new ApolloServer({
     typeDefs,
-    resolvers
+    resolvers,
   });
 
+  // Starta servern
   await server.start();
 
+  // Lägg till middleware på /graphql
   app.use(
     '/graphql',
     cors(),
     bodyParser.json(),
-    expressMiddleware(server)
+    expressMiddleware(server, {
+      context: async ({ req }) => ({ req }) 
+    })
   );
 
+  // Lyssna på rätt port
   const PORT = process.env.PORT || 4000;
-
+  
   app.listen(PORT, () => {
     console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
   });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error('Error starting server:', err);
+});
