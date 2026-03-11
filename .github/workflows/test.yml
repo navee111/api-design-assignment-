@@ -1,0 +1,85 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run API Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+    
+    - name: Install Newman
+      run: |
+        echo "📦 Installerar Newman..."
+        npm install -g newman
+    
+    - name: Run Postman Tests
+      run: |
+        echo "🧪 Startar automatiserade API-tester..."
+        newman run VideoGameAPI.postman_collection.json \
+          -e Local.postman_environment.json \
+          --reporters cli,json \
+          --reporter-json-export test-results.json
+      continue-on-error: false
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: test-results.json
+        retention-days: 30
+    
+    - name: Test Summary
+      if: success()
+      run: |
+        echo "✅ Alla tester lyckades!"
+        echo "📊 Alla 23 tester passerade"
+    
+    - name: Test Failure
+      if: failure()
+      run: |
+        echo "❌ Några tester misslyckades"
+        echo "📊 Kolla loggarna ovan för detaljer"
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        echo "📦 Installerar dependencies..."
+        npm ci
+    
+    - name: Check for syntax errors
+      run: |
+        echo "🔍 Kollar efter syntaxfel..."
+        node -c src/index.js
+        node -c src/schema.js
+        node -c src/resolvers.js
+        node -c src/auth.js
+    
+    - name: Build success
+      run: echo "✅ Build lyckades! Inga syntaxfel."
