@@ -43,7 +43,7 @@ const typeDefs = `#graphql
   }
 
   input GameInput {
-    name: String!
+    name: String
     platform: String
     year: Int
     genre: String
