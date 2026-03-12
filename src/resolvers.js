@@ -1,10 +1,10 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const {
   generateToken,
   hashPassword,
   comparePassword,
-  getUserFromContext
-} = require('./auth');
+  getUserFromContext,
+} = require("./auth");
 
 const prisma = new PrismaClient();
 
@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
  */
 function requireAuth(context) {
   const userId = getUserFromContext(context);
-  if (!userId) throw new Error('Not authenticated');
+  if (!userId) throw new Error("Not authenticated");
   return userId;
 }
 
@@ -21,23 +21,19 @@ function requireAuth(context) {
  * Utility: Calculate global sales
  */
 function calculateGlobalSales(input) {
-  return (input.naSales || 0) +
-         (input.euSales || 0) +
-         (input.jpSales || 0) +
-         (input.otherSales || 0);
+  return (
+    (input.naSales || 0) +
+    (input.euSales || 0) +
+    (input.jpSales || 0) +
+    (input.otherSales || 0)
+  );
 }
 
 /**
  * Utility: Build dynamic where filter for games
  */
 function buildGameFilters(args) {
-  const {
-    platform,
-    genre,
-    publisher,
-    yearMin,
-    yearMax
-  } = args;
+  const { platform, genre, publisher, yearMin, yearMax } = args;
 
   const where = {};
 
@@ -45,7 +41,7 @@ function buildGameFilters(args) {
   if (genre) where.genre = genre;
 
   if (publisher) {
-    where.publisher = { contains: publisher, mode: 'insensitive' };
+    where.publisher = { contains: publisher, mode: "insensitive" };
   }
 
   if (yearMin || yearMax) {
@@ -63,7 +59,7 @@ const resolvers = {
       const userId = requireAuth(context);
 
       return prisma.user.findUnique({
-        where: { id: userId }
+        where: { id: userId },
       });
     },
 
@@ -75,23 +71,23 @@ const resolvers = {
         where,
         take: Math.min(limit, 100),
         skip: offset,
-        orderBy: { globalSales: 'desc' }
+        orderBy: { globalSales: "desc" },
       });
     },
 
     game: async (_, { id }) => {
       const game = await prisma.game.findUnique({
-        where: { id: parseInt(id) }
+        where: { id: parseInt(id) },
       });
 
-      if (!game) throw new Error('Game not found');
+      if (!game) throw new Error("Game not found");
 
       return game;
     },
 
     publishers: async (_, { limit = 50 }) => {
       const games = await prisma.game.findMany({
-        where: { publisher: { not: null } }
+        where: { publisher: { not: null } },
       });
 
       const map = {};
@@ -102,7 +98,7 @@ const resolvers = {
             name: g.publisher,
             totalGames: 0,
             totalSales: 0,
-            games: []
+            games: [],
           };
         }
 
@@ -118,27 +114,27 @@ const resolvers = {
 
     publisher: async (_, { name }) => {
       const games = await prisma.game.findMany({
-        where: { publisher: { equals: name, mode: 'insensitive' } }
+        where: { publisher: { equals: name, mode: "insensitive" } },
       });
 
-      if (!games.length) throw new Error('Publisher not found');
+      if (!games.length) throw new Error("Publisher not found");
 
       const totalSales = games.reduce(
         (sum, g) => sum + (g.globalSales || 0),
-        0
+        0,
       );
 
       return {
         name: games[0].publisher,
         totalGames: games.length,
         totalSales,
-        games
+        games,
       };
     },
 
     genres: async () => {
       const games = await prisma.game.findMany({
-        where: { genre: { not: null } }
+        where: { genre: { not: null } },
       });
 
       const map = {};
@@ -149,7 +145,7 @@ const resolvers = {
             name: g.genre,
             totalGames: 0,
             totalSales: 0,
-            games: []
+            games: [],
           };
         }
 
@@ -160,38 +156,38 @@ const resolvers = {
 
       return Object.values(map).map((genre) => ({
         ...genre,
-        averageSales: genre.totalSales / genre.totalGames
+        averageSales: genre.totalSales / genre.totalGames,
       }));
     },
 
     genre: async (_, { name }) => {
       const games = await prisma.game.findMany({
-        where: { genre: { equals: name, mode: 'insensitive' } }
+        where: { genre: { equals: name, mode: "insensitive" } },
       });
 
-      if (!games.length) throw new Error('Genre not found');
+      if (!games.length) throw new Error("Genre not found");
 
       const totalSales = games.reduce(
         (sum, g) => sum + (g.globalSales || 0),
-        0
+        0,
       );
 
       return {
         name: games[0].genre,
         totalGames: games.length,
         averageSales: totalSales / games.length,
-        games // return all games. 
+        games, // return all games.
       };
-    }
+    },
   },
 
   Mutation: {
     register: async (_, { email, password, name }) => {
       const existingUser = await prisma.user.findUnique({
-        where: { email }
+        where: { email },
       });
 
-      if (existingUser) throw new Error('User already exists');
+      if (existingUser) throw new Error("User already exists");
 
       const hashedPassword = await hashPassword(password);
 
@@ -199,46 +195,45 @@ const resolvers = {
         data: {
           email,
           password: hashedPassword,
-          name
-        }
+          name,
+        },
       });
 
       return {
         token: generateToken(user.id),
-        user
+        user,
       };
     },
 
     login: async (_, { email, password }) => {
       const user = await prisma.user.findUnique({
-        where: { email }
+        where: { email },
       });
 
-      if (!user) throw new Error('Invalid credentials');
+      if (!user) throw new Error("Invalid credentials");
 
       const valid = await comparePassword(password, user.password);
-      if (!valid) throw new Error('Invalid credentials');
+      if (!valid) throw new Error("Invalid credentials");
 
       return {
         token: generateToken(user.id),
-        user
+        user,
       };
     },
-    deleteTestUsers: async (_, { email}) => {
-      return prisma.user.delete({
-        where: {email}
-      })
-
+    deleteTestUsers: async (_, { email }) => {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) return null;
+      return prisma.user.delete({ where: { email } });
     },
-      
+    
     createGame: async (_, { input }, context) => {
       requireAuth(context);
 
       return prisma.game.create({
         data: {
           ...input,
-          globalSales: calculateGlobalSales(input)
-        }
+          globalSales: calculateGlobalSales(input),
+        },
       });
     },
 
@@ -251,8 +246,8 @@ const resolvers = {
         where: { id: parseInt(id) },
         data: {
           ...input,
-          globalSales: globalSales > 0 ? globalSales : undefined
-        }
+          globalSales: globalSales > 0 ? globalSales : undefined,
+        },
       });
     },
 
@@ -260,10 +255,10 @@ const resolvers = {
       requireAuth(context);
 
       return prisma.game.delete({
-        where: { id: parseInt(id) }
+        where: { id: parseInt(id) },
       });
-    }
-  }
+    },
+  },
 };
 
 module.exports = resolvers;
