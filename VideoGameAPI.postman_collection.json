@@ -752,7 +752,7 @@
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "query {\n  genre(name: \"Sports\") {\n    name\n    totalGames\n    averageSales\n  }\n}",
+								"query": "query {\n  genre(name: \"Sports\") {\n    name\n    totalGames\n    averageSales\n    games {\n      name\n      platform\n    }\n  }\n}",
 								"variables": ""
 							}
 						},
