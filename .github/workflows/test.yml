@@ -28,9 +28,10 @@ jobs:
     - name: Clean up test user
       run: |
         echo "🧹 Rensar testanvändare..."
-        curl -X POST https://api-design-assignment-production.up.railway.app/graphql \
+        RESPONSE=$(curl -s -X POST https://api-design-assignment-production.up.railway.app/graphql \
           -H "Content-Type: application/json" \
-          -d '{"query":"mutation { deleteTestUsers(email: \"test@example.com\") }"}'
+          -d '{"query":"mutation { deleteTestUsers(email: \"test@example.com\") { id email } }"}')
+        echo "Response: $RESPONSE"
 
 
     
