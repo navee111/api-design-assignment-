@@ -180,7 +180,7 @@ const resolvers = {
         name: games[0].genre,
         totalGames: games.length,
         averageSales: totalSales / games.length,
-        games
+        games // return all games. 
       };
     }
   },
