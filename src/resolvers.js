@@ -224,7 +224,13 @@ const resolvers = {
         user
       };
     },
+    deleteTestUsers: async (_, { email}) => {
+      return prisma.user.delete({
+        where: {email}
+      })
 
+    },
+      
     createGame: async (_, { input }, context) => {
       requireAuth(context);
 

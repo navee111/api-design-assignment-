@@ -76,6 +76,7 @@ const typeDefs = `#graphql
   type Mutation {
     register(email: String!, password: String!, name: String): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
+    deleteTestUsers(email: String!): User
     createGame(input: GameInput!): Game!
     updateGame(id: ID!, input: GameInput!): Game!
     deleteGame(id: ID!): Game!

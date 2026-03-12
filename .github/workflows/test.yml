@@ -24,6 +24,15 @@ jobs:
       run: |
         echo "📦 Installerar Newman..."
         npm install -g newman
+      
+    - name: Clean up test user
+      run: |
+        echo "🧹 Rensar testanvändare..."
+        curl -X POST https://api-design-assignment-production.up.railway.app/graphql \
+          -H "Content-Type: application/json" \
+          -d '{"query":"mutation { deleteTestUser(email: \"test@example.com\") }"}'
+
+
     
     - name: Run Postman Tests
       run: |
