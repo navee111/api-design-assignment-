@@ -1,6 +1,7 @@
 
 const { ApolloServer } = require('@apollo/server');
 const { startStandaloneServer } = require('@apollo/server/standalone');
+const { ApolloServerPluginLandingPageLocalDefault } = require('@apollo/server/plugin/landingPage/default');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 
