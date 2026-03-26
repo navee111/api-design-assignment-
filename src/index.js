@@ -5,6 +5,11 @@ const { ApolloServerPluginLandingPageLocalDefault } = require('@apollo/server/pl
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
 
+/**
+ * Bootstraps and starts the Apollo GraphQL server.
+ *
+ * @returns {Promise<void>} Resolves when the server has started.
+ */
 async function startServer() {
   const server = new ApolloServer({ typeDefs, resolvers, introspection: true,
     plugins: [
