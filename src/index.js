@@ -11,17 +11,26 @@ const resolvers = require('./resolvers');
  * @returns {Promise<void>} Resolves when the server has started.
  */
 async function startServer() {
-  const server = new ApolloServer({ typeDefs, resolvers, introspection: true,
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    introspection: true,
+    formatError: (formattedError) => ({
+      error: formattedError.message,
+      message: formattedError.message,
+      code: formattedError.extensions?.code || "INTERNAL_SERVER_ERROR",
+      status: formattedError.extensions?.http?.status || 500,
+    }),
     plugins: [
       ApolloServerPluginLandingPageLocalDefault({
         embed: true,
         includeCookies: true,
       }),
-    ]
+    ],
   });
   const { url } = await startStandaloneServer(server, {
     context: async ({ req }) => ({ req }),
-    listen: { port: process.env.PORT || 4000 }
+    listen: { port: process.env.PORT || 4000 },
   });
   console.log(`🚀 Server ready at ${url}`);
 }

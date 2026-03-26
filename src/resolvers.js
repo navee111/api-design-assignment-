@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { GraphQLError } = require("graphql");
 const {
   generateToken,
   hashPassword,
@@ -9,6 +10,43 @@ const {
 const prisma = new PrismaClient();
 
 /**
+ * Create a GraphQL error that also controls HTTP status code.
+ *
+ * @param {number} status - HTTP status code.
+ * @param {string} message - Error message.
+ * @param {string} code - Application error code.
+ * @returns {GraphQLError} GraphQL error with HTTP metadata.
+ */
+function createHttpError(status, message, code) {
+  return new GraphQLError(message, {
+    extensions: {
+      code,
+      http: { status },
+    },
+  });
+}
+
+/**
+ * Parse and validate integer id values.
+ *
+ * @param {string|number} id - Incoming id value.
+ * @param {string} fieldName - Logical field name for error messages.
+ * @returns {number} Parsed integer id.
+ * @throws {GraphQLError} When id is invalid.
+ */
+function parseRequiredInt(id, fieldName) {
+  const parsed = Number.parseInt(id, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw createHttpError(
+      400,
+      `${fieldName} must be a positive integer`,
+      "BAD_USER_INPUT",
+    );
+  }
+  return parsed;
+}
+
+/**
  * Resolve and validate the authenticated user id from GraphQL context.
  *
  * @param {{ req?: { headers?: { authorization?: string } } }} context - Resolver context.
@@ -17,7 +55,9 @@ const prisma = new PrismaClient();
  */
 function requireAuth(context) {
   const userId = getUserFromContext(context);
-  if (!userId) throw new Error("Not authenticated");
+  if (!userId) {
+    throw createHttpError(401, "Not authenticated", "UNAUTHENTICATED");
+  }
   return userId;
 }
 
@@ -91,11 +131,14 @@ const resolvers = {
     },
 
     game: async (_, { id }) => {
+      const gameId = parseRequiredInt(id, "id");
       const game = await prisma.game.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: gameId },
       });
 
-      if (!game) throw new Error("Game not found");
+      if (!game) {
+        throw createHttpError(404, "Game not found", "NOT_FOUND");
+      }
 
       return game;
     },
@@ -132,7 +175,9 @@ const resolvers = {
         where: { publisher: { equals: name, mode: "insensitive" } },
       });
 
-      if (!games.length) throw new Error("Publisher not found");
+      if (!games.length) {
+        throw createHttpError(404, "Publisher not found", "NOT_FOUND");
+      }
 
       const totalSales = games.reduce(
         (sum, g) => sum + (g.globalSales || 0),
@@ -180,7 +225,9 @@ const resolvers = {
         where: { genre: { equals: name, mode: "insensitive" } },
       });
 
-      if (!games.length) throw new Error("Genre not found");
+      if (!games.length) {
+        throw createHttpError(404, "Genre not found", "NOT_FOUND");
+      }
 
       const totalSales = games.reduce(
         (sum, g) => sum + (g.globalSales || 0),
@@ -202,7 +249,9 @@ const resolvers = {
         where: { email },
       });
 
-      if (existingUser) throw new Error("User already exists");
+      if (existingUser) {
+        throw createHttpError(400, "User already exists", "BAD_USER_INPUT");
+      }
 
       const hashedPassword = await hashPassword(password);
 
@@ -225,10 +274,14 @@ const resolvers = {
         where: { email },
       });
 
-      if (!user) throw new Error("Invalid credentials");
+      if (!user) {
+        throw createHttpError(401, "Invalid credentials", "UNAUTHENTICATED");
+      }
 
       const valid = await comparePassword(password, user.password);
-      if (!valid) throw new Error("Invalid credentials");
+      if (!valid) {
+        throw createHttpError(401, "Invalid credentials", "UNAUTHENTICATED");
+      }
 
       return {
         token: generateToken(user.id),
@@ -237,7 +290,9 @@ const resolvers = {
     },
     deleteTestUsers: async (_, { email }) => {
       const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) return null;
+      if (!user) {
+        throw createHttpError(404, "User not found", "NOT_FOUND");
+      }
       return prisma.user.delete({ where: { email } });
     },
     
@@ -254,24 +309,40 @@ const resolvers = {
 
     updateGame: async (_, { id, input }, context) => {
       requireAuth(context);
+      const gameId = parseRequiredInt(id, "id");
 
       const globalSales = calculateGlobalSales(input);
 
-      return prisma.game.update({
-        where: { id: parseInt(id) },
-        data: {
-          ...input,
-          globalSales: globalSales > 0 ? globalSales : undefined,
-        },
-      });
+      try {
+        return prisma.game.update({
+          where: { id: gameId },
+          data: {
+            ...input,
+            globalSales: globalSales > 0 ? globalSales : undefined,
+          },
+        });
+      } catch (error) {
+        if (error && error.code === "P2025") {
+          throw createHttpError(404, "Game not found", "NOT_FOUND");
+        }
+        throw error;
+      }
     },
 
     deleteGame: async (_, { id }, context) => {
       requireAuth(context);
+      const gameId = parseRequiredInt(id, "id");
 
-      return prisma.game.delete({
-        where: { id: parseInt(id) },
-      });
+      try {
+        return prisma.game.delete({
+          where: { id: gameId },
+        });
+      } catch (error) {
+        if (error && error.code === "P2025") {
+          throw createHttpError(404, "Game not found", "NOT_FOUND");
+        }
+        throw error;
+      }
     },
   },
 };
