@@ -9,7 +9,9 @@ const CSV_FILE_PATH = path.join(__dirname, 'vgsales.csv');
 const BATCH_SIZE = 500;
 
 /**
- * Clears all games from the database
+ * Remove all existing game records.
+ *
+ * @returns {Promise<void>} Resolves after records are deleted.
  */
 async function clearGames() {
   console.log('Clearing existing games...');
@@ -18,7 +20,10 @@ async function clearGames() {
 }
 
 /**
- * Maps a CSV row to a Game object
+ * Convert a CSV row into a Prisma-compatible game payload.
+ *
+ * @param {{ Rank?: string, Name?: string, Platform?: string, Year?: string, Genre?: string, Publisher?: string, NA_Sales?: string, EU_Sales?: string, JP_Sales?: string, Other_Sales?: string, Global_Sales?: string }} row - Raw CSV row.
+ * @returns {{ rank: number|null, name: string, platform: string|null, year: number|null, genre: string|null, publisher: string|null, naSales: number, euSales: number, jpSales: number, otherSales: number, globalSales: number }} Parsed game object.
  */
 function mapRowToGame(row) {
   return {
@@ -37,7 +42,9 @@ function mapRowToGame(row) {
 }
 
 /**
- * Reads and parses the CSV file
+ * Read and parse all games from the CSV source file.
+ *
+ * @returns {Promise<Array<{ rank: number|null, name: string, platform: string|null, year: number|null, genre: string|null, publisher: string|null, naSales: number, euSales: number, jpSales: number, otherSales: number, globalSales: number }>>} Parsed game records.
  */
 async function readGamesFromCSV() {
   return new Promise((resolve, reject) => {
@@ -59,7 +66,10 @@ async function readGamesFromCSV() {
 }
 
 /**
- * Inserts games into database in batches
+ * Insert game records into the database in fixed-size batches.
+ *
+ * @param {Array<{ rank: number|null, name: string, platform: string|null, year: number|null, genre: string|null, publisher: string|null, naSales: number, euSales: number, jpSales: number, otherSales: number, globalSales: number }>} games - Parsed game records.
+ * @returns {Promise<void>} Resolves when all batches are inserted.
  */
 async function insertGamesInBatches(games) {
   let insertedCount = 0;
@@ -78,7 +88,9 @@ async function insertGamesInBatches(games) {
 }
 
 /**
- * Main execution function
+ * Seed the database from the CSV source.
+ *
+ * @returns {Promise<void>} Resolves when seeding completes.
  */
 async function main() {
   console.log('🚀 Starting database seed...');
@@ -96,7 +108,7 @@ async function main() {
 }
 
 /**
- * Run script safely
+ * Execute seed workflow with error handling and Prisma disconnect.
  */
 main()
   .catch((error) => {

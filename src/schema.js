@@ -1,3 +1,8 @@
+/**
+ * GraphQL schema definition used by Apollo Server.
+ *
+ * @type {string}
+ */
 const typeDefs = `#graphql
   type User {
     id: ID!

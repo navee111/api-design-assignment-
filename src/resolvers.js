@@ -9,7 +9,11 @@ const {
 const prisma = new PrismaClient();
 
 /**
- * Utility: Require authentication
+ * Resolve and validate the authenticated user id from GraphQL context.
+ *
+ * @param {{ req?: { headers?: { authorization?: string } } }} context - Resolver context.
+ * @returns {string|number} Authenticated user id.
+ * @throws {Error} When the request is unauthenticated.
  */
 function requireAuth(context) {
   const userId = getUserFromContext(context);
@@ -18,7 +22,10 @@ function requireAuth(context) {
 }
 
 /**
- * Utility: Calculate global sales
+ * Calculate total global sales from regional sales fields.
+ *
+ * @param {{ naSales?: number, euSales?: number, jpSales?: number, otherSales?: number }} input - Game sales input.
+ * @returns {number} Total global sales.
  */
 function calculateGlobalSales(input) {
   return (
@@ -30,7 +37,10 @@ function calculateGlobalSales(input) {
 }
 
 /**
- * Utility: Build dynamic where filter for games
+ * Build a Prisma `where` filter from optional game query arguments.
+ *
+ * @param {{ platform?: string, genre?: string, publisher?: string, yearMin?: number, yearMax?: number }} args - Query filters.
+ * @returns {Record<string, unknown>} Prisma-compatible filter object.
  */
 function buildGameFilters(args) {
   const { platform, genre, publisher, yearMin, yearMax } = args;
@@ -53,6 +63,11 @@ function buildGameFilters(args) {
   return where;
 }
 
+/**
+ * GraphQL resolvers for queries and mutations.
+ *
+ * @type {{ Query: Record<string, Function>, Mutation: Record<string, Function> }}
+ */
 const resolvers = {
   Query: {
     me: async (_, __, context) => {
